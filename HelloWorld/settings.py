@@ -78,7 +78,8 @@ WSGI_APPLICATION = 'HelloWorld.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'com_simulation',
+        'NAME': 'test02',
+        #'NAME': 'com_simulation',
         'USER': 'root',
         'PASSWORD': '123456',
         'HOST': '127.0.0.1',

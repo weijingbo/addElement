@@ -2,26 +2,93 @@ import json
 
 from django.http import HttpResponse, JsonResponse
 from rest_framework.decorators import api_view
+
+from HelloWorld.coe2tle import sema2numOfrotate, simpleCoe2Tle
 from TestModel import models
 from django.core import serializers
 from django.db import connection
+from django.forms.models import model_to_dict
 
+R = 6378.137
 
 @api_view(['GET'])
-def getSpectrumConfig(request):
-    experiment_id = request.GET.get('experimentId')
-    cons_id = request.GET.get('consId')
-    spectrumConfig = models.SpectrumConfig.objects.filter(experiment_id=experiment_id, constellation_id=cons_id)
-    result = json.loads(serializers.serialize("json", spectrumConfig))
-    dict = {
-        "errorCode": 200,
-        "data": {
-            "spectrumConfig": result[0]["fields"]
+def getSpectrumConfig(request,experiment_id,cons_id):
+    spectrumConfig = models.SpectrumConfig.objects.filter(experimentId=experiment_id, constellationId=cons_id).first()
+    print(spectrumConfig)
+    if spectrumConfig is not None:
+        result = json.loads(serializers.serialize("json", spectrumConfig))
+        dict = {
+            "errorCode": 200,
+            "data": {
+                "spectrumConfig": result[0]["fields"]
+            }
         }
+        return JsonResponse(dict, safe=False)
+    else:
+        dict = {
+            "errorCode": 0,
+            "errorMsg":"频谱保存失败"
+        }
+        return JsonResponse(dict, safe=False)
+
+
+@api_view(['POST'])
+def saveSpectrumConfig(request):
+    body = json.loads(request.body.decode('utf-8'))
+    print(body["fubChCarries"])
+    # models.SpectrumConfig.objects.create(
+    #     id=body["id"],
+    #     name=body["name"],
+    #     experimentId=body["experimentId"],
+    #     constellationId=body["constellationId"],
+    #     uubChBw=body["uubChBw"],
+    #     uubChNum=body["uubChNum"],
+    #     uubBwTot=body["uubBwTot"],
+    #     uubChCarries=body["uubChCarries"],
+    #     uubChK=body["uubChK"],
+    #     uubChPolar=body["uubChPolar"],
+    #     uubModcod=body["uubModcod"],
+    #     uubRolloff=body["uubRolloff"],
+    #     udbChBw=body["udbChBw"],
+    #     udbChNum=body["udbChNum"],
+    #     udbBwTot=body["udbBwTot"],
+    #     udbChCarries=body["udbChCarries"],
+    #     udbChK=body["udbChK"],
+    #     udbChPolar=body["udbChPolar"],
+    #     udbModcod=body["udbModcod"],
+    #     udbRolloff=body["udbRolloff"],
+    #     fubChBw=body["fubChBw"],
+    #     fubChNum=body["fubChNum"],
+    #     fubBwTot=body["fubBwTot"],
+    #     fubChCarries=body["fubChCarries"],
+    #     fubChK=body["fubChK"],
+    #     fubChPolar=body["fubChPolar"],
+    #     fubModcod=body["fubModcod"],
+    #     fubRolloff=body["fubRolloff"],
+    #     fdbChBw=body["fdbChBw"],
+    #     fdbChNum=body["fdbChNum"],
+    #     fdbBwTot=body["fdbBwTot"],
+    #     fdbChCarries=body["fdbChCarries"],
+    #     fdbChK=body["fdbChK"],
+    #     fdbChPolar=body["fdbChPolar"],
+    #     fdbModcod=body["fdbModcod"],
+    #     fdbRolloff=body["fdbRolloff"],
+    #     uubFec=body["uubFec"],
+    #     udbFec=body["udbFec"],
+    #     fubFec=body["fubFec"],
+    #     fdbFec=body["fdbFec"],
+    #     uubFrequencyPoint=body["uubFrequencyPoint"],
+    #     udbFrequencyPoint=body["udbFrequencyPoint"],
+    #     fubFrequencyPoint=body["fubFrequencyPoint"],
+    #     fdbFrequencyPoint=body["fdbFrequencyPoint"],
+    # )
+    # models.Experiment.objects.filter(id=body["experimentId"]).update(internalIdMax=body["id"])
+    result = {
+        "errorCode": 200
     }
-    return JsonResponse(dict, safe=False)
+    return JsonResponse(result, safe=False)
 
-
+@api_view(['GET'])
 def config_list_view(request, experiment_id):
     experiment = models.Experiment.objects.filter(id=experiment_id)
     data = json.loads(serializers.serialize("json", experiment))[0]["fields"]
@@ -35,11 +102,11 @@ def config_list_view(request, experiment_id):
 
     data["constellationGroupInfos"] = getConstellationGroup(experiment_id)
 
-    data["externalIdBaseOfExperimentId"] = 0  # 不知道这个字段的映射
+    data["externalIdBaseOfExperimentId"] = experiment_id << 32  # 实验ID偏移32位后的结果
     data["classicOrbitSatellites"] = []
     # data["constellationInfos"] = []
     # data["constellationGroupInfos"] = []
-    #data["regionInfos"] =[]
+    # data["regionInfos"] =[]
     return_json = {
         "errorCode": 200,
         "errorMsg": "获取实验成功",
@@ -59,17 +126,18 @@ def getConstellationGroup(experimentId):
     for cons in constellation_groups:
         cons_temp = cons["fields"]
         cons_temp["id"] = cons["pk"]
-        cons_temp["regionInfos"] = getRegion(experimentId=experimentId,consId=cons["pk"])
+        cons_temp["regionInfos"] = getRegion(experimentId=experimentId, consId=cons["pk"])
         cons_temp["staticNodes"] = []
         cons_temp["classicOrbitSatellites"] = []
         cons_temp["movingNodes"] = []
         cons_temp["tleOrbitSatellites"] = []
-        cons_temp["constellationInfos"] = getConstellation(experimentId=experimentId,consId=cons["pk"])
+        cons_temp["constellationInfos"] = getConstellation(experimentId=experimentId, consId=cons["pk"])
         # cons_temp["constellationInfos"] = []
         cons_list.append(cons_temp)
     return cons_list
 
-def getRegion(experimentId,consId=0):
+
+def getRegion(experimentId, consId=0):
     regions_list = []
     with connection.cursor() as cursor:
         select = f"select region_id,region_info_list from ground_region where experiment_id={experimentId}"
@@ -80,13 +148,14 @@ def getRegion(experimentId,consId=0):
             region_temp = json.loads(res[1])
             region_consId = region_temp["constellationGroupId"]
             # 通过比较查询结果是否是该星座组下的区域
-            if region_consId==consId:
-                region_temp["terminals"] = getStationByExpId(experimentId,regionId,consId)
+            if region_consId == consId:
+                region_temp["terminals"] = getStationByExpId(experimentId, regionId, consId)
                 regions_list.append(region_temp)
 
     return regions_list
 
-def getConstellation(experimentId, consId = 0):
+
+def getConstellation(experimentId, consId=0):
     constellations_select = models.Constellation.objects.filter(experimentId=experimentId, constellationGroupId=consId)
     constellations = json.loads(serializers.serialize("json", constellations_select))
     constellationInfos = []
@@ -94,7 +163,7 @@ def getConstellation(experimentId, consId = 0):
     for con in constellations:
         temp = con['fields']
         temp["id"] = con['pk']
-        temp['satellites'] = getSatsByconsId(experimentId=experimentId,consId=con['pk'],groupId=consId)
+        temp['satellites'] = getSatsByconsId(experimentId=experimentId, consId=con['pk'], groupId=consId)
         temp["twoLineParam"] = {
             "tle1": temp.pop("tle1"),
             "tle2": temp.pop("tle2")
@@ -102,7 +171,7 @@ def getConstellation(experimentId, consId = 0):
         temp["sixNumbersParam"] = {
             "orientation": {
                 "inclination": temp.pop("inclination"),
-                "argOfPerigee": temp.pop("argument_of_perigee"),
+                "argOfPerigee": temp.pop("argOfPerigee"),
                 "raan": temp.pop("raan"),
             },
             "shape": {
@@ -117,8 +186,9 @@ def getConstellation(experimentId, consId = 0):
     return constellationInfos
 
 
-def getSatsByconsId(experimentId,consId=0,groupId=0):
-    satellite_select = models.Satellite.objects.filter(experimentId=experimentId,constellationId=consId,constellationGroupId=groupId)
+def getSatsByconsId(experimentId, consId=0, groupId=0):
+    satellite_select = models.Satellite.objects.filter(experimentId=experimentId, constellationId=consId,
+                                                       constellationGroupId=groupId)
     satellite = json.loads(serializers.serialize("json", satellite_select))
     satellites = []
     # 处理每个卫星的映射
@@ -135,8 +205,8 @@ def getSatsByconsId(experimentId,consId=0,groupId=0):
             "raan": sat_temp.pop("raan")
         }
         shape = {
-            "_apogeeAltitude": sat_temp.pop("apogeeAltitude"),
-            "_perigeeAltitude": sat_temp.pop("perigeeAltitude")
+            "_apogeeAltitude": sat_temp.pop("_apogeeAltitude"),
+            "_perigeeAltitude": sat_temp.pop("_perigeeAltitude")
         },
         sat_temp["orientation"] = orientation
         sat_temp["shape"] = shape
@@ -207,10 +277,10 @@ def getDeviceByNodeId(nodeId):
     return devices_list
 
 
-def getStationByExpId(experimentId,regionId=0,consId=0):
-    if regionId ==0:
+def getStationByExpId(experimentId, regionId=0, consId=0):
+    if regionId == 0:
         facility_select = models.Facility.objects.filter(experimentId=experimentId, regionId__isnull=True,
-                                                         constellationGroupId =consId)
+                                                         constellationGroupId=consId)
     else:
         facility_select = models.Facility.objects.filter(experimentId=experimentId, regionId=regionId,
                                                          constellationGroupId=consId)
@@ -230,7 +300,7 @@ def getStationByExpId(experimentId,regionId=0,consId=0):
 
 
 @api_view(['POST'])
-def addConstellationGroup(request,experiment_id):
+def addConstellationGroup(request, experiment_id):
     body = json.loads(request.body.decode('utf-8'))
     experimentId = body["experimentId"]
     id = body["id"]
@@ -240,11 +310,13 @@ def addConstellationGroup(request,experiment_id):
         group.showName = showName
         group.save()
     else:
-        models.ConstellationGroup.objects.create(experimentId=experimentId,showName=showName,id=id,isHighOrbitConstellationGroup=0)
-    result ={
-        "errorCode":200
+        models.ConstellationGroup.objects.create(experimentId=experimentId, showName=showName, id=id,
+                                                 isHighOrbitConstellationGroup=0)
+    result = {
+        "errorCode": 200
     }
     return JsonResponse(result, safe=False)
+
 
 @api_view(['POST'])
 def deleteConstellationGroupList(request):
@@ -265,17 +337,100 @@ def addConstellation(request):
     experimentId = body["experimentId"]
     constellationInfo = body["constellationInfo"]
     internalIdMax = body["internalIdMax"]
-    satellites = constellationInfo.pop("satellites")
-    sixNumbersParam = constellationInfo.pop("sixNumbersParam")
-    cons = ParseJsonToObj(constellationInfo,models.Constellation)
-    print(cons.trueAnomaly,cons.consIp,cons.maxPlane,cons._perigeeAltitude)
-    # cons.save()
+    internalIdMax = max(constellationInfo["id"], internalIdMax)
+    cons = models.Constellation.objects.create(
+        id=constellationInfo["id"],
+        showName=constellationInfo["showName"],
+        nodeType=constellationInfo["nodeType"],
+        numberOfPlanes=constellationInfo["numberOfPlanes"],
+        numberOfSatsPerPlane=constellationInfo["numberOfSatsPerPlane"],
+        trueAnomalyInterval=0,
+        raanSpread=constellationInfo["raanSpread"],
+        experimentId=experimentId,
+        zoningStatus=0,
+        constellationGroupId=constellationInfo["constellationGroupId"],
+        _perigeeAltitude=constellationInfo["_perigeeAltitude"],
+        _apogeeAltitude=constellationInfo["_apogeeAltitude"],
+        inclination=constellationInfo["inclination"],
+        raan=constellationInfo["raan"],
+        constellationType=constellationInfo["constellationType"],
+        argOfPerigee=constellationInfo["argOfPerigee"],
+        trueAnomaly=constellationInfo["trueAnomaly"]
+    )
+
+    cons.save()
+    sat_list = []
+    ssc = 10000
+    for sat in constellationInfo["satellites"]:
+        internalIdMax = max(sat["id"], internalIdMax)
+        sema = sat["_apogeeAltitude"]+R
+        e = (sat["_apogeeAltitude"]-sat["_perigeeAltitude"])/sema
+        raan = sat["raan"]
+        inclination = sat["inclination"]
+        argOfPerigee = sat["argOfPerigee"]
+        trueAnomaly=sat["trueAnomaly"]
+        Num_of_rotate = sema2numOfrotate(sema)
+        six = []
+        six.append(Num_of_rotate)
+        six.append(e)
+        six.append(inclination)
+        six.append(argOfPerigee)
+        six.append(raan)
+        six.append(trueAnomaly)
+
+        startYear = 17
+        startTime = 123.16666667  # 长度固定 长度为12
+        tle1,tle2 = simpleCoe2Tle(startYear, startTime, six, str(ssc))
+        print(sat["showName"])
+        print(tle1)
+        print(tle2)
+        ssc+=1
+        sat_list.append(models.Satellite(
+            id=sat["id"],
+            showName=sat["showName"],
+            nodeType=sat["nodeType"],
+            _apogeeAltitude=sat["_apogeeAltitude"],
+            _perigeeAltitude=sat["_perigeeAltitude"],
+            inclination=sat["inclination"],
+            argOfPerigee=sat["argOfPerigee"],
+            raan=sat["raan"],
+            trueAnomaly=sat["trueAnomaly"],
+            attitudeSeg=sat["attitudeSeg"],
+            constraintOffset=sat["constraintOffset"],
+            isMainSatellite=sat["isMainSatellite"],
+            constellationId=sat["constellationId"],
+            planeIndex=sat["planeIndex"],
+            interPlaneIndex=sat["interPlaneIndex"],
+            deviceNumberLimit=sat["deviceNumberLimit"],
+            experimentId=experimentId,
+            constellationGroupId=sat["constellationGroupId"],
+            tle1=tle1,
+            tle2=tle2
+        ))
+
+    models.Satellite.objects.bulk_create(sat_list)
+    models.Experiment.objects.filter(id=experimentId).update(internalIdMax=internalIdMax)
+    result = {
+        "errorCode": 200,
+        "errorMsg": "插入成功"
+    }
+    return JsonResponse(result, safe=False)
+
+
+def deleteConstellation(request):
+    body = json.loads(request.body.decode('utf-8'))
+    experimentId = body["experimentId"]
+    id = body["id"]
+    models.Constellation.objects.filter(id=id).first().delete()
+    models.Satellite.objects.filter(constellationId=id).delete()
     result = {
         "errorCode": 200
     }
     return JsonResponse(result, safe=False)
 
-def ParseJsonToObj(jsonStr,classStr):
-    result = classStr()
-    result.__dict__ = jsonStr
-    return result
+
+def modifyGroundRegionAndTerminal(request):
+    result = {
+        "errorCode": 200
+    }
+    return JsonResponse(result, safe=False)
