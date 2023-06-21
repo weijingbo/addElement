@@ -3,12 +3,11 @@ import json
 from django.http import HttpResponse, JsonResponse
 from rest_framework.decorators import api_view
 
-from HelloWorld.coe2tle import sema2numOfrotate, simpleCoe2Tle
 from HelloWorld.experimentDetail import getRegion, getConstellation, getStationByExpId, getConstellationGroup
 from TestModel import models
 from django.core import serializers
+from django.utils import timezone
 
-from django.forms.models import model_to_dict
 
 
 @api_view(['GET'])
@@ -247,14 +246,6 @@ def modifyConstellationName(request):
     }
     return JsonResponse(result, safe=False)
 
-
-def modifyGroundRegionAndTerminal(request):
-    result = {
-        "errorCode": 200
-    }
-    return JsonResponse(result, safe=False)
-
-
 def modifyNodeDeviceList(request):
     body = json.loads(request.body.decode('utf-8'))
     devices = body["devices"]
@@ -331,5 +322,119 @@ def modifyNodeDeviceList(request):
         "data":{
             "internalIdMax":internalIdMax,
         }
+    }
+    return JsonResponse(result, safe=False)
+
+
+#分区
+@api_view(['POST'])
+def modifyGroundRegionAndTerminal(request):
+    body = json.loads(request.body.decode('utf-8'))
+    regionInfo = body['regionInfo']
+    # d1 = timezone.now()
+    # d2=timezone.localtime(d1)
+    # d3=d2.strftime("%Y-%m-%d %H:%M:%S")
+    # print(d3)
+
+    terminals = regionInfo["terminals"],
+    models.GroundRegion.objects.create(
+        regionId=regionInfo["id"],
+        experimentId=body["experimentId"],
+        regionInfoList=body["regionInfo"],
+        internalIdMax=body["internalIdMax"],
+        lastModTime=timezone.now().strftime("%Y-%m-%d %H:%M:%S")  #时间输出有问题
+    )
+
+    for facility in terminals:
+        for terminals in facility:
+            position=terminals["position"]
+            models.Facility.objects.create(
+                id=terminals["id"],
+                showName=terminals["showName"],
+                nodeType=terminals["nodeType"],
+                latitude=position["latitude"],
+                longitude=position["longitude"],
+                altitude=position["altitude"],
+                experimentId=body["experimentId"],
+                constellationGroupId=terminals["constellationGroupId"],
+                grade=terminals["grade"],
+                bwReq=terminals["bwReq"],
+                regionId=regionInfo["id"],
+            )
+    result = {
+        "errorCode": 200
+    }
+    return JsonResponse(result, safe=False)
+
+
+def deleteGroundRegionAndTerminal(request):
+    body = json.loads(request.body.decode('utf-8'))
+    regionIdList=body["regionIdList"]
+    for id in regionIdList:
+        models.GroundRegion.objects.filter(regionId=id).delete()
+        models.Facility.objects.filter(regionId=id).delete()
+    result = {
+        "errorCode": 200
+    }
+    return JsonResponse(result, safe=False)
+
+# 信关站\终端站
+def modifyNode(request):
+    body = json.loads(request.body.decode('utf-8'))
+    data=body["data"]
+    experimentId = body["experimentId"]
+    if data["nodeType"]==1:
+        models.Satellite.objects.create(
+            id=data["id"],
+            showName=data["showName"],
+            nodeType=data["nodeType"],
+            attitudeSeg=data["attitudeSeg"],
+            constraintOffset=data["constraintOffset"],
+            isMainSatellite=data["isMainSatellite"],
+            constellationId=0,
+            deviceNumberLimit=data["deviceNumberLimit"],
+            experimentId=experimentId,
+            constellationGroupId=data["parentId"],
+            tle1=data["tle1"],
+            tle2=data["tle2"]
+        )
+    else:
+        position=data["position"]
+        models.Facility.objects.create(
+            id=data["id"],
+            showName=data["showName"],
+            nodeType=data["nodeType"],
+            latitude=position["latitude"],
+            longitude=position["longitude"],
+            altitude=position["altitude"],
+            experimentId=body["experimentId"],
+            attitudeSeg=data["attitudeSeg"],
+            # deviceId=data["id"],
+            accessConstellationList=data["accessConstellationList"],
+            constellationGroupId=data["parentId"],
+            grade=data["grade"],
+            bwReq=data["bwReq"],
+        )
+    result = {
+        "errorCode": 200
+    }
+    return JsonResponse(result, safe=False)
+
+
+def deleteNodeList(request):
+    body = json.loads(request.body.decode('utf-8'))
+    nodeIdAndTypes=body["nodeIdAndTypes"]
+    # experimentId=body["experimentId"]
+    # print(body["nodeIdAndTypes"])
+    for nodeIdList1 in nodeIdAndTypes:
+        print(nodeIdList1)
+        for  key in nodeIdList1:
+            datakey='nodeIds'
+            if key==datakey:
+                value=nodeIdList1[key]
+                for id in value:
+                    models.Facility.objects.filter(id=id).delete()
+    result = {
+        "errorCode": 200
     }
     return JsonResponse(result, safe=False)

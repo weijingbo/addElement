@@ -24,8 +24,11 @@ urlpatterns = [
     path('deleteConstellationGroupList', views.deleteConstellationGroupList),
     path('addConstellation', views.addConstellation),
     path('deleteConstellation', views.deleteConstellation),
-    path('modifyGroundRegionAndTerminal', views.modifyGroundRegionAndTerminal),
     path('saveSpectrumConfig', views.saveSpectrumConfig),
     path('modifyConstellationName',views.modifyConstellationName),
-    path('modifyNodeDeviceList',views.modifyNodeDeviceList)
+    path('modifyNodeDeviceList',views.modifyNodeDeviceList),
+    path('modifyGroundRegionAndTerminal', views.modifyGroundRegionAndTerminal),
+    path('deleteGroundRegionAndTerminal', views.deleteGroundRegionAndTerminal),
+    path('modifyNode', views.modifyNode),
+    path('deleteNodeList', views.deleteNodeList)
 ]

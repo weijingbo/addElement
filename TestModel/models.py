@@ -374,11 +374,11 @@ class Facility(models.Model):
 
 
 class GroundRegion(models.Model):
-    region_id = models.BigIntegerField()
+    regionId = models.BigIntegerField(db_column="region_id")
     experimentId = models.IntegerField(db_column="experiment_id")
-    region_info_list = models.JSONField(blank=True, null=True)
-    internal_id_max = models.BigIntegerField(blank=True, null=True)
-    last_mod_time = models.CharField(max_length=100, blank=True, null=True)
+    regionInfoList = models.JSONField(blank=True, null=True,db_column="region_info_list")
+    internalIdMax = models.BigIntegerField(blank=True, null=True,db_column="internal_id_max")
+    lastModTime = models.CharField(max_length=100, blank=True, null=True,db_column="last_mod_time")
 
     class Meta:
         managed = False
