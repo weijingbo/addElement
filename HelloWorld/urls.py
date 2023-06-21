@@ -19,11 +19,13 @@ from . import views
 
 urlpatterns = [
     path('getSpectrumConfig/experimentId=<int:experiment_id>&consId=<int:cons_id>', views.getSpectrumConfig),
-    path('getExperimentDetail/<int:experiment_id>', views.config_list_view),
+    path('getExperimentDetail/<int:experiment_id>', views.getExperimentDetail),
     path('experiment/<int:experiment_id>/addConstellationGroup', views.addConstellationGroup),
     path('deleteConstellationGroupList', views.deleteConstellationGroupList),
     path('addConstellation', views.addConstellation),
     path('deleteConstellation', views.deleteConstellation),
     path('modifyGroundRegionAndTerminal', views.modifyGroundRegionAndTerminal),
-    path('saveSpectrumConfig', views.saveSpectrumConfig)
+    path('saveSpectrumConfig', views.saveSpectrumConfig),
+    path('modifyConstellationName',views.modifyConstellationName),
+    path('modifyNodeDeviceList',views.modifyNodeDeviceList)
 ]
