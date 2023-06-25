@@ -34,5 +34,7 @@ urlpatterns = [
     path('modifyGroundRegionAndTerminal', views.modifyGroundRegionAndTerminal),
     path('deleteGroundRegionAndTerminal', views.deleteGroundRegionAndTerminal),
     path('modifyNode', views.modifyNode),
-    path('deleteNodeList', views.deleteNodeList)
+    path('deleteNodeList', views.deleteNodeList),
+
+    path('user/login',views.login)
 ]

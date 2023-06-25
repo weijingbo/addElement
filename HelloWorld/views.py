@@ -386,6 +386,7 @@ def deleteGroundRegionAndTerminal(request):
 def modifyNode(request):
     body = json.loads(request.body.decode('utf-8'))
     data = body["data"]
+    internalIdMax = body["internalIdMax"]
     experimentId = body["experimentId"]
     if data["nodeType"] == 1:
         models.Satellite.objects.create(
@@ -419,9 +420,11 @@ def modifyNode(request):
             grade=data["grade"],
             bwReq=data["bwReq"],
         )
+    models.Experiment.objects.filter(id=experimentId).update(internalIdMax=internalIdMax)
     result = {
         "errorCode": 200
     }
+
     return JsonResponse(result, safe=False)
 
 
@@ -440,5 +443,23 @@ def deleteNodeList(request):
                     models.Facility.objects.filter(id=id).delete()
     result = {
         "errorCode": 200
+    }
+    return JsonResponse(result, safe=False)
+
+
+def login(request):
+    result = {
+        "errorCode": 200,
+        "userId":"测试",
+        "authToken":1
+    }
+    return JsonResponse(result, safe=False)
+
+@api_view(['GET'])
+def getExperimentList(request):
+    result = {
+        "errorCode": 200,
+        "userId": "测试",
+        "authToken": 1
     }
     return JsonResponse(result, safe=False)
