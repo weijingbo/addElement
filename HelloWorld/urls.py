@@ -16,6 +16,7 @@ Including another URLconf
 
 from django.urls import path
 from . import views
+from . import experimentList
 
 urlpatterns = [
     path('getSpectrumConfig/experimentId=<int:experiment_id>&consId=<int:cons_id>', views.getSpectrumConfig),
@@ -36,5 +37,9 @@ urlpatterns = [
     path('modifyNode', views.modifyNode),
     path('deleteNodeList', views.deleteNodeList),
 
-    path('user/login',views.login)
+    path('user/login',experimentList.login),
+    path('user/register',experimentList.register),
+
+    path('getExperimentList/<int:user_id>',experimentList.getExperimentList),
+    path('createGroup',experimentList.createGroup)
 ]

@@ -599,15 +599,16 @@ class SpectrumConfig(models.Model):
 
 
 class User(models.Model):
+    id = models.BigAutoField(primary_key=True)
     account = models.CharField(max_length=50)
     password = models.CharField(max_length=50)
     email = models.CharField(max_length=50)
-    login_time = models.DateTimeField(blank=True, null=True)
-    login_ip = models.CharField(max_length=15, blank=True, null=True)
+    loginTime = models.DateTimeField(db_column="login_time",blank=True, null=True)
+    loginIp = models.CharField(db_column="login_ip",max_length=15, blank=True, null=True)
     status = models.IntegerField()
-    create_time = models.DateTimeField()
-    update_time = models.DateTimeField()
-    remark = models.CharField(max_length=200, blank=True, null=True)
+    # create_time = models.DateTimeField()
+    # update_time = models.DateTimeField()
+    # remark = models.CharField(max_length=200, blank=True, null=True)
 
     class Meta:
         managed = False
@@ -616,10 +617,10 @@ class User(models.Model):
 
 class UserGroup(models.Model):
     name = models.CharField(max_length=50)
-    user_id = models.IntegerField()
-    create_time = models.DateTimeField()
-    update_time = models.DateTimeField()
-    remark = models.CharField(max_length=200, blank=True, null=True)
+    userId = models.IntegerField(db_column="user_id")
+    # create_time = models.DateTimeField()
+    # update_time = models.DateTimeField()
+    # remark = models.CharField(max_length=200, blank=True, null=True)
 
     class Meta:
         managed = False

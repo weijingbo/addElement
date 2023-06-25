@@ -447,19 +447,5 @@ def deleteNodeList(request):
     return JsonResponse(result, safe=False)
 
 
-def login(request):
-    result = {
-        "errorCode": 200,
-        "userId":"测试",
-        "authToken":1
-    }
-    return JsonResponse(result, safe=False)
 
-@api_view(['GET'])
-def getExperimentList(request):
-    result = {
-        "errorCode": 200,
-        "userId": "测试",
-        "authToken": 1
-    }
-    return JsonResponse(result, safe=False)
+
