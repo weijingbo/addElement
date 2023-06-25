@@ -19,14 +19,18 @@ from . import views
 
 urlpatterns = [
     path('getSpectrumConfig/experimentId=<int:experiment_id>&consId=<int:cons_id>', views.getSpectrumConfig),
+    path('saveSpectrumConfig', views.saveSpectrumConfig),
     path('getExperimentDetail/<int:experiment_id>', views.getExperimentDetail),
+
     path('experiment/<int:experiment_id>/addConstellationGroup', views.addConstellationGroup),
     path('deleteConstellationGroupList', views.deleteConstellationGroupList),
+
     path('addConstellation', views.addConstellation),
     path('deleteConstellation', views.deleteConstellation),
-    path('saveSpectrumConfig', views.saveSpectrumConfig),
     path('modifyConstellationName',views.modifyConstellationName),
+
     path('modifyNodeDeviceList',views.modifyNodeDeviceList),
+
     path('modifyGroundRegionAndTerminal', views.modifyGroundRegionAndTerminal),
     path('deleteGroundRegionAndTerminal', views.deleteGroundRegionAndTerminal),
     path('modifyNode', views.modifyNode),

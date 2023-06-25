@@ -10,7 +10,7 @@ def getConstellationGroup(experimentId):
         cons_temp = cons["fields"]
         cons_temp["id"] = cons["pk"]
         cons_temp["regionInfos"] = getRegion(experimentId=experimentId, consId=cons["pk"])
-        cons_temp["staticNodes"] = []
+        cons_temp["staticNodes"] = getStationByExpId(experimentId=experimentId,consId=cons["pk"])
         cons_temp["classicOrbitSatellites"] = []
         cons_temp["movingNodes"] = []
         cons_temp["tleOrbitSatellites"] = []
@@ -80,7 +80,7 @@ def getSatsByconsId(experimentId, consId=0, groupId=0):
         sat_id = sat['pk']
         sat_temp["ipAddress"] = "--.--.--.--"
 
-        sat_temp["communicationDevices"] = getDeviceByNodeId(sat_id)
+        sat_temp["communicationDevices"] = getDeviceByNodeId(sat_id,1)
         # 处理每个设备
         orientation = {
             "inclination": sat_temp.pop("inclination"),
@@ -98,8 +98,11 @@ def getSatsByconsId(experimentId, consId=0, groupId=0):
     return satellites
 
 
-def getDeviceByNodeId(nodeId):
-    device_select = models.Device.objects.filter(nodeId=nodeId)
+def getDeviceByNodeId(nodeId,type):
+    if type==1:
+        device_select = models.Device.objects.filter(nodeId=nodeId)
+    else:
+        device_select = models.Device.objects.filter(devicePatternId=nodeId)
     devices = json.loads(serializers.serialize("json", device_select))
     devices_list = []
     for device in devices:
@@ -172,7 +175,7 @@ def getStationByExpId(experimentId, regionId=0, consId=0):
     for facility in facilities:
         facility_temp = facility["fields"]
         facility_temp["id"] = facility["pk"]
-        facility_temp["communicationDevices"] = getDeviceByNodeId(facility["pk"])
+        facility_temp["communicationDevices"] = getDeviceByNodeId(facility["pk"],1)
         facility_temp["position"] = {
             "altitude": facility_temp.pop("altitude"),
             "latitude": facility_temp.pop("latitude"),

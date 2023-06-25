@@ -10,10 +10,39 @@ from django.utils import timezone
 
 
 
+
+@api_view(['GET'])
+def getExperimentDetail(request, experiment_id):
+    experiment = models.Experiment.objects.filter(id=experiment_id)
+    data = json.loads(serializers.serialize("json", experiment))[0]["fields"]
+    data["experimentId"] = experiment_id
+    data["regionInfos"] = getRegion(experimentId=experiment_id)
+    data["movingNodes"] = []
+    data["tleOrbitSatellites"] = []
+    data["constellationInfos"] = getConstellation(experiment_id)
+    data["staticNodes"] = getStationByExpId(experiment_id)
+    data["constellationGroupInfos"] = getConstellationGroup(experiment_id)
+    data["externalIdBaseOfExperimentId"] = experiment_id << 32  # 实验ID偏移32位后的结果
+    data["classicOrbitSatellites"] = []
+    # data["constellationInfos"] = []
+    # data["constellationGroupInfos"] = []
+    # data["regionInfos"] =[]
+    return_json = {
+        "errorCode": 200,
+        "errorMsg": "获取实验成功",
+        "data": data
+
+    }
+    return JsonResponse(return_json, safe=False)
+    # with open('D:\dev\DjangoTest\HelloWorld\HelloWorld\getConfig.json', encoding='utf-8') as f:
+    #     settings = json.load(f)
+    #     return JsonResponse(settings, safe=False)
+
+
 @api_view(['GET'])
 def getSpectrumConfig(request, experiment_id, cons_id):
     spectrumConfig = models.SpectrumConfig.objects.filter(experimentId=experiment_id, constellationId=cons_id)
-    if spectrumConfig is not None:
+    if len(spectrumConfig) != 0:
         result = json.loads(serializers.serialize("json", spectrumConfig))
         spectrum_temp = result[0]["fields"]
         spectrum_temp["fdbChCarries"] = eval(spectrum_temp["fdbChCarries"])
@@ -101,35 +130,6 @@ def saveSpectrumConfig(request):
         "errorCode": 200
     }
     return JsonResponse(result, safe=False)
-
-
-@api_view(['GET'])
-def getExperimentDetail(request, experiment_id):
-    experiment = models.Experiment.objects.filter(id=experiment_id)
-    data = json.loads(serializers.serialize("json", experiment))[0]["fields"]
-    data["experimentId"] = experiment_id
-    data["regionInfos"] = getRegion(experimentId=experiment_id)
-    data["movingNodes"] = []
-    data["tleOrbitSatellites"] = []
-    data["constellationInfos"] = getConstellation(experiment_id)
-    data["staticNodes"] = getStationByExpId(experiment_id)
-    data["constellationGroupInfos"] = getConstellationGroup(experiment_id)
-    data["externalIdBaseOfExperimentId"] = experiment_id << 32  # 实验ID偏移32位后的结果
-    data["classicOrbitSatellites"] = []
-    # data["constellationInfos"] = []
-    # data["constellationGroupInfos"] = []
-    # data["regionInfos"] =[]
-    return_json = {
-        "errorCode": 200,
-        "errorMsg": "获取实验成功",
-        "data": data
-
-    }
-    return JsonResponse(return_json, safe=False)
-    # with open('D:\dev\DjangoTest\HelloWorld\HelloWorld\getConfig.json', encoding='utf-8') as f:
-    #     settings = json.load(f)
-    #     return JsonResponse(settings, safe=False)
-
 
 @api_view(['POST'])
 def addConstellationGroup(request, experiment_id):
@@ -230,6 +230,7 @@ def deleteConstellation(request):
     id = body["id"]
     models.Constellation.objects.filter(id=id).first().delete()
     models.Satellite.objects.filter(constellationId=id).delete()
+    models.Device.objects.filter(nodeId=id).delete()
     result = {
         "errorCode": 200
     }
@@ -246,6 +247,7 @@ def modifyConstellationName(request):
     }
     return JsonResponse(result, safe=False)
 
+
 def modifyNodeDeviceList(request):
     body = json.loads(request.body.decode('utf-8'))
     devices = body["devices"]
@@ -253,7 +255,7 @@ def modifyNodeDeviceList(request):
     internalIdMax = body["internalIdMax"]
     experimentId = body["experimentId"]
     models.Device.objects.filter(devicePatternId=targetId).delete()
-    device_list =[]
+    device_list = []
     for device in devices.values():
         if device is not None:
             # ID 问题还需要处理
@@ -262,8 +264,9 @@ def modifyNodeDeviceList(request):
             receiver = device["receiver"]
             transmitter = device["transmitter"]
             device_temp = models.Device(
-                devicePatternId=targetId,
+                nodeId=targetId,
                 id=internalIdMax,
+                devicePatternId=0,  # 后续可能还要修改
                 deviceName=device["deviceName"],
                 deviceType=device["deviceType"],
                 azimuth=deviceEquipConfig["azimuth"],
@@ -291,9 +294,9 @@ def modifyNodeDeviceList(request):
                 device_temp.maxRange = deviceEquipConfig["maxRange"]
                 device_temp.bandWidth = linkConfig["bandWidth"]
                 device_temp.communication = linkConfig["communication"]
-                device_temp.communicationSpeed=linkConfig["communicationSpeed"]
-                device_temp.modulationMode=linkConfig["modulationMode"]
-                device_temp.waveLength=linkConfig["waveLength"]
+                device_temp.communicationSpeed = linkConfig["communicationSpeed"]
+                device_temp.modulationMode = linkConfig["modulationMode"]
+                device_temp.waveLength = linkConfig["waveLength"]
                 device_temp.receiveThreshold = receiver["receiveThreshold"]
                 device_temp.trackingError = receiver["trackingError"]
             else:
@@ -314,19 +317,19 @@ def modifyNodeDeviceList(request):
                 device_temp.radiationModel = transmitter["radiationModel"]
                 device_temp.rolloff = transmitter["rolloff"]
             device_list.append(device_temp)
-            internalIdMax+=1
+            internalIdMax += 1
     models.Device.objects.bulk_create(device_list)
     models.Experiment.objects.filter(id=experimentId).update(internalIdMax=internalIdMax)
     result = {
         "errorCode": 200,
-        "data":{
-            "internalIdMax":internalIdMax,
+        "data": {
+            "internalIdMax": internalIdMax,
         }
     }
     return JsonResponse(result, safe=False)
 
 
-#分区
+# 分区
 @api_view(['POST'])
 def modifyGroundRegionAndTerminal(request):
     body = json.loads(request.body.decode('utf-8'))
@@ -342,12 +345,12 @@ def modifyGroundRegionAndTerminal(request):
         experimentId=body["experimentId"],
         regionInfoList=body["regionInfo"],
         internalIdMax=body["internalIdMax"],
-        lastModTime=timezone.now().strftime("%Y-%m-%d %H:%M:%S")  #时间输出有问题
+        lastModTime=timezone.now().strftime("%Y-%m-%d %H:%M:%S")  # 时间输出有问题
     )
 
     for facility in terminals:
         for terminals in facility:
-            position=terminals["position"]
+            position = terminals["position"]
             models.Facility.objects.create(
                 id=terminals["id"],
                 showName=terminals["showName"],
@@ -369,7 +372,7 @@ def modifyGroundRegionAndTerminal(request):
 
 def deleteGroundRegionAndTerminal(request):
     body = json.loads(request.body.decode('utf-8'))
-    regionIdList=body["regionIdList"]
+    regionIdList = body["regionIdList"]
     for id in regionIdList:
         models.GroundRegion.objects.filter(regionId=id).delete()
         models.Facility.objects.filter(regionId=id).delete()
@@ -378,12 +381,13 @@ def deleteGroundRegionAndTerminal(request):
     }
     return JsonResponse(result, safe=False)
 
+
 # 信关站\终端站
 def modifyNode(request):
     body = json.loads(request.body.decode('utf-8'))
-    data=body["data"]
+    data = body["data"]
     experimentId = body["experimentId"]
-    if data["nodeType"]==1:
+    if data["nodeType"] == 1:
         models.Satellite.objects.create(
             id=data["id"],
             showName=data["showName"],
@@ -399,7 +403,7 @@ def modifyNode(request):
             tle2=data["tle2"]
         )
     else:
-        position=data["position"]
+        position = data["position"]
         models.Facility.objects.create(
             id=data["id"],
             showName=data["showName"],
@@ -423,15 +427,15 @@ def modifyNode(request):
 
 def deleteNodeList(request):
     body = json.loads(request.body.decode('utf-8'))
-    nodeIdAndTypes=body["nodeIdAndTypes"]
+    nodeIdAndTypes = body["nodeIdAndTypes"]
     # experimentId=body["experimentId"]
     # print(body["nodeIdAndTypes"])
     for nodeIdList1 in nodeIdAndTypes:
         print(nodeIdList1)
-        for  key in nodeIdList1:
-            datakey='nodeIds'
-            if key==datakey:
-                value=nodeIdList1[key]
+        for key in nodeIdList1:
+            datakey = 'nodeIds'
+            if key == datakey:
+                value = nodeIdList1[key]
                 for id in value:
                     models.Facility.objects.filter(id=id).delete()
     result = {
