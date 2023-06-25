@@ -288,11 +288,11 @@ class Device(models.Model):
 
 class DevicePattern(models.Model):
     id = models.BigIntegerField(primary_key=True)
-    device_pattern_name = models.CharField(max_length=100)
+    devicePatternName = models.CharField(db_column="device_pattern_name",max_length=100)
     # create_time = models.DateTimeField()
     # update_time = models.DateTimeField()
     # remark = models.CharField(max_length=100, blank=True, null=True)
-    experiment_id = models.IntegerField()
+    experimentId = models.IntegerField(db_column="experiment_id")
 
     class Meta:
         managed = False

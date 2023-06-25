@@ -30,6 +30,8 @@ urlpatterns = [
     path('modifyConstellationName',views.modifyConstellationName),
 
     path('modifyNodeDeviceList',views.modifyNodeDeviceList),
+    path('modifyDevicePattern',views.modifyDevicePattern),
+    path('deleteDevicePattern',views.deleteDevicePattern),
 
     path('modifyGroundRegionAndTerminal', views.modifyGroundRegionAndTerminal),
     path('deleteGroundRegionAndTerminal', views.deleteGroundRegionAndTerminal),
