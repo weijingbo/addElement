@@ -3,7 +3,7 @@ from django.test import TestCase
 # Create your tests here.
 # print(109<<32)
 
-# 测试与主分支的合并
+# 测试与主分支的合并:wjb
 strs = {"a":"b","b":"c"}
 
 print(strs.a)
