@@ -442,3 +442,14 @@ def deleteNodeList(request):
         "errorCode": 200
     }
     return JsonResponse(result, safe=False)
+
+
+def login(request):
+    print(login)
+    result = {
+        "errorCode": 200,
+        "userId":"测试",
+        "authToken":1
+    }
+    return JsonResponse(result, safe=False)
+
