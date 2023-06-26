@@ -255,72 +255,78 @@ def modifyNodeDeviceList(request):
     targetId = body["targetId"]
     internalIdMax = body["internalIdMax"]
     experimentId = body["experimentId"]
-    models.Device.objects.filter(devicePatternId=targetId).delete()
-    device_list = []
-    for device in devices.values():
-        if device is not None:
-            # ID 问题还需要处理
-            deviceEquipConfig = device["deviceEquipConfig"]
-            linkConfig = device["linkConfig"]
-            receiver = device["receiver"]
-            transmitter = device["transmitter"]
-            device_temp = models.Device(
-                nodeId=targetId,
-                id=internalIdMax,
-                devicePatternId=0,  # 后续可能还要修改
-                deviceName=device["deviceName"],
-                deviceType=device["deviceType"],
-                azimuth=deviceEquipConfig["azimuth"],
-                elevation=deviceEquipConfig["elevation"],
-                maxAzimuth=deviceEquipConfig["maxAzimuth"],
-                maxElevation=deviceEquipConfig["maxElevation"],
-                minAzimuth=deviceEquipConfig["minAzimuth"],
-                minElevation=deviceEquipConfig["minElevation"],
-                pointingType=deviceEquipConfig["pointingType"],
-                antennaReGain=receiver["antennaReGain"],
-                aptLoss=receiver["aptLoss"],
-                fNoiseTemperature=receiver["fNoiseTemperature"],
-                otherReGainLoss=receiver["otherReGainLoss"],
-                reEfficiency=receiver["reEfficiency"],
-                antennaTrGain=transmitter["antennaTrGain"],
-                beamDistribution=transmitter["antennaTrGain"],
-                diameter=transmitter["antennaTrGain"],
-                diffractionLimit=transmitter["antennaTrGain"],
-                divergenceAngle=transmitter["antennaTrGain"],
-                otherTrGainLoss=transmitter["antennaTrGain"],
-                trEfficiency=transmitter["antennaTrGain"],
-                trPower=transmitter["antennaTrGain"]
-            )
-            if device["deviceType"] == 1:
-                device_temp.maxRange = deviceEquipConfig["maxRange"]
-                device_temp.bandWidth = linkConfig["bandWidth"]
-                device_temp.communication = linkConfig["communication"]
-                device_temp.communicationSpeed = linkConfig["communicationSpeed"]
-                device_temp.modulationMode = linkConfig["modulationMode"]
-                device_temp.waveLength = linkConfig["waveLength"]
-                device_temp.receiveThreshold = receiver["receiveThreshold"]
-                device_temp.trackingError = receiver["trackingError"]
-            else:
-                device_temp.beamFov = deviceEquipConfig["beamFov"]
-                device_temp.dbeamNum = deviceEquipConfig["azimuth"]
-                device_temp.halfAngleMajorAxis = deviceEquipConfig["halfAngleMajorAxis"]
-                device_temp.halfAngleMinorAxis = deviceEquipConfig["halfAngleMinorAxis"]
-                device_temp.modulationMode = linkConfig["modulationMode"]
-                device_temp.lnbGain = receiver["lnbGain"]
-                device_temp.maxDepoint = receiver["maxDepoint"]
-                device_temp.bUtil = transmitter["bUtil"]
-                device_temp.backoff = transmitter["backoff"]
-                device_temp.contour = transmitter["contour"]
-                device_temp.fec = transmitter["fec"]
-                device_temp.freq = transmitter["freq"]
-                device_temp.otherTrGainLoss = transmitter["otherTrGainLoss"]
-                device_temp.polarizationMode = transmitter["polarizationMode"]
-                device_temp.radiationModel = transmitter["radiationModel"]
-                device_temp.rolloff = transmitter["rolloff"]
-            device_list.append(device_temp)
-            internalIdMax += 1
-    models.Device.objects.bulk_create(device_list)
-    models.Experiment.objects.filter(id=experimentId).update(internalIdMax=internalIdMax)
+    targetType = body["targetType"]
+    if targetType == "constellation":
+        targets = models.Satellite.objects.filter(constellationId=targetId)
+    if targetType == "region":
+        targets = models.Facility.objects.filter(regionId=targetId)
+    for tr in targets:
+        models.Device.objects.filter(devicePatternId=targetId).delete()
+        device_list = []
+        for device in devices.values():
+            if device is not None:
+                # ID 问题还需要处理
+                deviceEquipConfig = device["deviceEquipConfig"]
+                linkConfig = device["linkConfig"]
+                receiver = device["receiver"]
+                transmitter = device["transmitter"]
+                device_temp = models.Device(
+                    nodeId=tr.id,
+                    id=internalIdMax,
+                    devicePatternId=0,  # 后续可能还要修改
+                    deviceName=device["deviceName"],
+                    deviceType=device["deviceType"],
+                    azimuth=deviceEquipConfig["azimuth"],
+                    elevation=deviceEquipConfig["elevation"],
+                    maxAzimuth=deviceEquipConfig["maxAzimuth"],
+                    maxElevation=deviceEquipConfig["maxElevation"],
+                    minAzimuth=deviceEquipConfig["minAzimuth"],
+                    minElevation=deviceEquipConfig["minElevation"],
+                    pointingType=deviceEquipConfig["pointingType"],
+                    antennaReGain=receiver["antennaReGain"],
+                    aptLoss=receiver["aptLoss"],
+                    fNoiseTemperature=receiver["fNoiseTemperature"],
+                    otherReGainLoss=receiver["otherReGainLoss"],
+                    reEfficiency=receiver["reEfficiency"],
+                    antennaTrGain=transmitter["antennaTrGain"],
+                    beamDistribution=transmitter["antennaTrGain"],
+                    diameter=transmitter["antennaTrGain"],
+                    diffractionLimit=transmitter["antennaTrGain"],
+                    divergenceAngle=transmitter["antennaTrGain"],
+                    otherTrGainLoss=transmitter["antennaTrGain"],
+                    trEfficiency=transmitter["antennaTrGain"],
+                    trPower=transmitter["antennaTrGain"]
+                )
+                if device["deviceType"] == 1:
+                    device_temp.maxRange = deviceEquipConfig["maxRange"]
+                    device_temp.bandWidth = linkConfig["bandWidth"]
+                    device_temp.communication = linkConfig["communication"]
+                    device_temp.communicationSpeed = linkConfig["communicationSpeed"]
+                    device_temp.modulationMode = linkConfig["modulationMode"]
+                    device_temp.waveLength = linkConfig["waveLength"]
+                    device_temp.receiveThreshold = receiver["receiveThreshold"]
+                    device_temp.trackingError = receiver["trackingError"]
+                else:
+                    device_temp.beamFov = deviceEquipConfig["beamFov"]
+                    device_temp.dbeamNum = deviceEquipConfig["azimuth"]
+                    device_temp.halfAngleMajorAxis = deviceEquipConfig["halfAngleMajorAxis"]
+                    device_temp.halfAngleMinorAxis = deviceEquipConfig["halfAngleMinorAxis"]
+                    device_temp.modulationMode = linkConfig["modulationMode"]
+                    device_temp.lnbGain = receiver["lnbGain"]
+                    device_temp.maxDepoint = receiver["maxDepoint"]
+                    device_temp.bUtil = transmitter["bUtil"]
+                    device_temp.backoff = transmitter["backoff"]
+                    device_temp.contour = transmitter["contour"]
+                    device_temp.fec = transmitter["fec"]
+                    device_temp.freq = transmitter["freq"]
+                    device_temp.otherTrGainLoss = transmitter["otherTrGainLoss"]
+                    device_temp.polarizationMode = transmitter["polarizationMode"]
+                    device_temp.radiationModel = transmitter["radiationModel"]
+                    device_temp.rolloff = transmitter["rolloff"]
+                device_list.append(device_temp)
+                internalIdMax += 1
+        models.Device.objects.bulk_create(device_list)
+        models.Experiment.objects.filter(id=experimentId).update(internalIdMax=internalIdMax)
     result = {
         "errorCode": 200,
         "data": {
