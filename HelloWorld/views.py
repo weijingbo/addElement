@@ -10,8 +10,6 @@ from django.core import serializers
 from django.utils import timezone
 
 
-
-
 @api_view(['GET'])
 def getExperimentDetail(request, experiment_id):
     experiment = models.Experiment.objects.filter(id=experiment_id)
@@ -131,6 +129,7 @@ def saveSpectrumConfig(request):
         "errorCode": 200
     }
     return JsonResponse(result, safe=False)
+
 
 @api_view(['POST'])
 def addConstellationGroup(request, experiment_id):
@@ -410,6 +409,9 @@ def modifyNode(request):
             tle1=data["tle1"],
             tle2=data["tle2"]
         )
+    elif data["nodeType"] == 2:
+        # 后续开发
+        print("小船")
     else:
         position = data["position"]
         models.Facility.objects.create(
@@ -441,7 +443,6 @@ def deleteNodeList(request):
     # experimentId=body["experimentId"]
     # print(body["nodeIdAndTypes"])
     for nodeIdList1 in nodeIdAndTypes:
-        print(nodeIdList1)
         for key in nodeIdList1:
             datakey = 'nodeIds'
             if key == datakey:
@@ -457,10 +458,11 @@ def deleteNodeList(request):
 def login(request):
     result = {
         "errorCode": 200,
-        "userId":"测试",
-        "authToken":1
+        "userId": "测试",
+        "authToken": 1
     }
     return JsonResponse(result, safe=False)
+
 
 @api_view(['GET'])
 def getExperimentList(request):
@@ -472,52 +474,51 @@ def getExperimentList(request):
     return JsonResponse(result, safe=False)
 
 
-
 @api_view(['POST'])
 def modifyDevicePattern(request):
     body = json.loads(request.body.decode('utf-8'))
-    device_pattern_id =body["devicePattern"]["devicePatternId"]
+    device_pattern_id = body["devicePattern"]["devicePatternId"]
     device_pattern_name = body["devicePattern"]["devicePatternName"]
     experiment_id = body["experimentId"]
     device = body["devicePattern"]["devices"][0]
-    #deviceEquipConfig
+    # deviceEquipConfig
     device_name = device["deviceName"]
     device_type = device["deviceType"]
-    id = device["id"]#什么id
+    id = device["id"]  # 什么id
     azimuth = device["deviceEquipConfig"]["azimuth"]
     elevation = device["deviceEquipConfig"]["elevation"]
     max_azimuth = device["deviceEquipConfig"]["maxAzimuth"]
     max_elevation = device["deviceEquipConfig"]["maxElevation"]
     max_range = device["deviceEquipConfig"]["maxRange"]
     min_azimuth = device["deviceEquipConfig"]["minAzimuth"]
-    min_elevation =  device["deviceEquipConfig"]["minElevation"]
+    min_elevation = device["deviceEquipConfig"]["minElevation"]
     pointing_type = device["deviceEquipConfig"]["pointingType"]
     print(pointing_type)
-    #linkconfig
-    band_width =device["linkConfig"]["bandWidth"]
+    # linkconfig
+    band_width = device["linkConfig"]["bandWidth"]
     communication = device["linkConfig"]["communication"]
     communication_speed = device["linkConfig"]["communicationSpeed"]
     modulation_mode = device["linkConfig"]["modulationMode"]
     wave_length = device["linkConfig"]["waveLength"]
     print(wave_length)
-    #receiver
+    # receiver
     antenna_re_gain = device["receiver"]["antennaReGain"]
     apt_loss = device["receiver"]["aptLoss"]
-    f_noise_temperature =  device["receiver"]["fNoiseTemperature"]
+    f_noise_temperature = device["receiver"]["fNoiseTemperature"]
     other_re_gain_loss = device["receiver"]["otherReGainLoss"]
     re_efficiency = device["receiver"]["reEfficiency"]
     receive_threshold = device["receiver"]["receiveThreshold"]
     tracking_error = device["receiver"]["trackingError"]
-    print(f_noise_temperature)#ceshi
-    #transmitter
-    beam_distribution= device["transmitter"]["beamDistribution"]
+    print(f_noise_temperature)  # ceshi
+    # transmitter
+    beam_distribution = device["transmitter"]["beamDistribution"]
     diameter = device["transmitter"]["diameter"]
-    diffraction_limit= device["transmitter"]["diffractionLimit"]
-    divergence_angle= device["transmitter"]["divergenceAngle"]
-    other_tr_gain_loss= device["transmitter"]["otherTrGainLoss"]
-    tr_efficiency= device["transmitter"]["trEfficiency"]
-    tr_power= device["transmitter"]["trPower"]
-    print(diameter)#ceshi
+    diffraction_limit = device["transmitter"]["diffractionLimit"]
+    divergence_angle = device["transmitter"]["divergenceAngle"]
+    other_tr_gain_loss = device["transmitter"]["otherTrGainLoss"]
+    tr_efficiency = device["transmitter"]["trEfficiency"]
+    tr_power = device["transmitter"]["trPower"]
+    print(diameter)  # ceshi
     internalIdMax = body["internalIdMax"]
     models.Device.objects.filter(id=id).delete()
     models.DevicePattern.objects.filter(id=device_pattern_id).delete()
@@ -558,20 +559,22 @@ def modifyDevicePattern(request):
                                  trPower=tr_power,
                                  )
     models.DevicePattern.objects.create(id=device_pattern_id,
-                                    devicePatternName=device_pattern_name,
-                                    experimentId=experiment_id,
-                                    # create_time="2023-01-25 10:44:50",
-                                    # update_time = "2023-01-25 10:44:50"
-    )
+                                        devicePatternName=device_pattern_name,
+                                        experimentId=experiment_id,
+                                        # create_time="2023-01-25 10:44:50",
+                                        # update_time = "2023-01-25 10:44:50"
+                                        )
     models.Experiment.objects.filter(id=experiment_id).update(internalIdMax=internalIdMax)
     result = {
         "errorCode": 200
     }
     return JsonResponse(result, safe=False)
+
+
 @api_view(['POST'])
 def deleteDevicePattern(request):
     body = json.loads(request.body.decode('utf-8'))
-    device_pattern_id =body["devicePatternIds"][0]
+    device_pattern_id = body["devicePatternIds"][0]
     experiment_id = body["experimentId"]
     # internalIdMax = body["internalIdMax"]
     models.Device.objects.filter(id=device_pattern_id).delete()
@@ -582,8 +585,9 @@ def deleteDevicePattern(request):
     }
     return JsonResponse(result, safe=False)
 
+
 @api_view(['GET'])
-def getDevicePattern(request,experiment_id):
+def getDevicePattern(request, experiment_id):
     id = request.GET.get('experiment_id')
     device_pattern = models.DevicePattern.objects.filter(experimentId=experiment_id)
     result = json.loads(serializers.serialize("json", device_pattern))
@@ -591,7 +595,7 @@ def getDevicePattern(request,experiment_id):
     for res in result:
         device_pattern_temp = res["fields"]
         device_pattern_temp["devicePatternId"] = res["pk"]
-        device_pattern_temp["devices"] = getDeviceByNodeId(res["pk"],2)
+        device_pattern_temp["devices"] = getDeviceByNodeId(res["pk"], 2)
         device_pattern_list.append(device_pattern_temp)
     dict = {
         "errorCode": 200,
@@ -599,6 +603,6 @@ def getDevicePattern(request,experiment_id):
             "devicePatterns": device_pattern_list
         }
     }
-    #这里出问题了，只打印了循环的最后一个，应该是把那个循环的所有结果保存在一个列表中，，放到list中了，但是不知道为啥还报错了
-    #列表里是所有实验id对应的设备模板，但前端还会执行说获取列表模板失败，那个语句是什么意思？数据格式不对？
+    # 这里出问题了，只打印了循环的最后一个，应该是把那个循环的所有结果保存在一个列表中，，放到list中了，但是不知道为啥还报错了
+    # 列表里是所有实验id对应的设备模板，但前端还会执行说获取列表模板失败，那个语句是什么意思？数据格式不对？
     return JsonResponse(dict, safe=False)
